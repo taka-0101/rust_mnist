@@ -43,10 +43,53 @@ impl Layer {
     }
 }
 
+fn transpose(v: Vec<Vec<f64>>) -> Vec<Vec<f64>>{
+    let mut result = Vec::new();
+    for i in 0..v[0].len(){
+        let mut r = Vec::new();
+        for j in 0..v.len(){
+            r.push(v[j][i])
+        }
+        result.push(r)
+    }
+    result
+}
+
+fn vector_dot(v1: Vec<Vec<f64>>, v2: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    let mut result = Vec::new();
+    if v1[0].len() == v2.len() {
+        for n in 0..v2[0].len() {
+            let mut v = Vec::new();
+            for i in 0..v1.len(){
+                let mut value = 0.0;
+                for j in 0..v2.len(){
+                    value = value + v1[i][j] * v2[j][n]
+                }
+                v.push(value)
+            }
+            result.push(v)
+        }
+    }
+    else{
+        println!("ERROR: Not much vector size")
+    }
+    transpose(result)
+}
+
+
 fn main() {
     let ly = Layer::new(2, 3);
     println!("{}",ly.pre_neuron_size);
     println!("{}",ly.next_neuron_size);
     println!("{:?}", ly.weights);
     println!("{:?}", ly.biases);
+
+    let v1 = vec![vec![1.0,2.0,3.0],vec![2.0,5.0,4.0]];
+    let v2 = vec![vec![2.0,5.0],vec![3.0,4.0],vec![1.0,5.0]];
+    println!("{:?}", vector_dot(v1,v2));
+
+    let ly1 = Layer::new(4, 2);
+    println!("{:?}", vector_dot(ly1.weights,ly.weights));
+
+
 }
