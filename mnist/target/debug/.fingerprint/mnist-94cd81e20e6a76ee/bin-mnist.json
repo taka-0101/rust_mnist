@@ -1,0 +1,1 @@
+{"rustc":6479157722664159563,"features":"[]","target":4848167837883508443,"profile":14996655781355331481,"path":1036222786711178230,"deps":[[7314251443660914635,"rand",false,4531179253805590577]],"local":[{"CheckDepInfo":{"dep_info":"debug\\.fingerprint\\mnist-94cd81e20e6a76ee\\dep-bin-mnist"}}],"rustflags":[],"metadata":8364028628434684194}
