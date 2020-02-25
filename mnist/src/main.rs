@@ -1,18 +1,18 @@
 extern crate rand;
+extern crate image;
 use rand::Rng;
+use image::GenericImageView;
+use image::DynamicImage;
+use image::Rgba;
 
 struct Layer {
-    pre_neuron_size: u16,
-    next_neuron_size: u16,
     weights: Vec<Vec<f64>>,
-    biases: Vec<f64>,
+    biases: Vec<Vec<f64>>,
 }
 
 impl Layer {
     fn new(p: u16, n: u16) -> Layer {
         Layer{
-            pre_neuron_size: p,
-            next_neuron_size: n,
             weights: Layer::weights_init(p, n),
             biases: Layer::biases_init(n)
         }
@@ -33,12 +33,14 @@ impl Layer {
         weights
     }
 
-    fn biases_init(n: u16) -> Vec<f64> {
+    fn biases_init(n: u16) -> Vec<Vec<f64>> {
         let mut biases = Vec::new();
+        let mut b = Vec::new();
         let mut rng = rand::thread_rng();
         for _i in 0..n {
-            biases.push(rng.gen::<f64>());
+            b.push(rng.gen::<f64>());
         }
+        biases.push(b);
         biases
     }
 }
@@ -76,20 +78,76 @@ fn vector_dot(v1: Vec<Vec<f64>>, v2: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     transpose(result)
 }
 
+fn vector_sum(v1: Vec<Vec<f64>>, v2: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    let mut result = Vec::new();
+    if v1.len() == v2.len() && v1[0].len() == v2[0].len() {
+        for i in 0..v1.len(){
+            let mut r = Vec::new();
+            for j in 0..v1[i].len(){
+                r.push(v1[i][j] + v2[i][j])
+            }
+            result.push(r)
+        }
+    }
+    result
+}
+
+fn calc_neuron(neuron: Vec<Vec<f64>>, ly: Layer) -> Vec<Vec<f64>> {
+    let r = vector_dot(neuron, ly.weights);
+    let result = vector_sum(r, ly.biases);
+    result
+}
+
+fn sigmoid(x: Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    let mut result = Vec::new();
+    for i in 0..x.len(){
+        let mut r = Vec::new();
+        for j in 0..x[i].len(){
+            r.push(1.0 / (1.0 + f64::exp(-x[i][j])));
+        }
+        result.push(r);
+    }
+    result
+}
+
+fn identity_function(x: Vec<Vec<f64>>) -> Vec<Vec<f64>>{
+    x
+}
+
+fn load_image(path: &str) -> Vec<Vec<f64>>{
+    let img: DynamicImage = image::open(path).unwrap();
+    let (width, height) = img.dimensions();
+
+    let mut result = Vec::new();
+    let mut r = Vec::new();
+    for y in 0..height {
+        for x in 0..width {
+            let pixel: Rgba<u8> = img.get_pixel(x, y);
+            if pixel[0] > 0 {
+                r.push(1.0 as f64);
+            }
+            else {
+                r.push(0.0 as f64);
+            }
+        }
+    }
+    result.push(r);
+    result
+}
 
 fn main() {
-    let ly = Layer::new(2, 3);
-    println!("{}",ly.pre_neuron_size);
-    println!("{}",ly.next_neuron_size);
-    println!("{:?}", ly.weights);
-    println!("{:?}", ly.biases);
+    let ly1 = Layer::new(784, 50);
+    let ly2 = Layer::new(50, 50);
+    let ly3 = Layer::new(50, 2);
+    
+    let n: Vec<f64> = vec![2.5, 3.0];
+    let mut neu = Vec::new();
+    neu.push(n);
 
-    let v1 = vec![vec![1.0,2.0,3.0],vec![2.0,5.0,4.0]];
-    let v2 = vec![vec![2.0,5.0],vec![3.0,4.0],vec![1.0,5.0]];
-    println!("{:?}", vector_dot(v1,v2));
+    let r1 = calc_neuron(load_image("mnist_png/testing/0/3.png"), ly1);
+    let r2 = calc_neuron(sigmoid(r1), ly2);
+    let r3 = calc_neuron(sigmoid(r2), ly3);
 
-    let ly1 = Layer::new(4, 2);
-    println!("{:?}", vector_dot(ly1.weights,ly.weights));
-
+    println!("{:?}", identity_function(r3));
 
 }
