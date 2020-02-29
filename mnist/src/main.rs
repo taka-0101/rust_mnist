@@ -173,18 +173,18 @@ impl TwoLayerNet {
     }
 
     fn predict(&self, x: &Vec<Vec<f64>>) -> Vec<Vec<f64>>{
-        let r_1 = vector_dot_(x, &self.w1);
-        let r1 = vector_sum_(&r_1, &self.b1);
-        let r_2 = vector_dot_(&sigmoid_(&r1), &self.w2);
-        let r2 = vector_sum_(&r_2, &self.b2);
-        let y = softmax_(&r2);
+        let r_1 = vector_dot(x, &self.w1);
+        let r1 = vector_sum(&r_1, &self.b1);
+        let r_2 = vector_dot(&sigmoid(&r1), &self.w2);
+        let r2 = vector_sum(&r_2, &self.b2);
+        let y = softmax(&r2);
 
         transpose(y)
     }
 
     fn loss(&self, x: &Vec<Vec<f64>>, t: &Vec<Vec<f64>>) -> f64{
         let y = self.predict(x);
-        let result = cross_entropy_error_(&y, t);
+        let result = cross_entropy_error(&y, t);
         result
     }
 
@@ -300,7 +300,7 @@ impl TwoLayerNet {
     }
 }
 
-fn softmax_(v: &Vec<Vec<f64>>) -> Vec<Vec<f64>>{
+fn softmax(v: &Vec<Vec<f64>>) -> Vec<Vec<f64>>{
     let mut result = Vec::new();
     for i in 0..v[0].len(){
         let mut value = 0.0 as f64;
@@ -329,7 +329,7 @@ fn transpose(v: Vec<Vec<f64>>) -> Vec<Vec<f64>>{
     result
 }
 
-fn vector_dot_(v1: &Vec<Vec<f64>>, v2: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+fn vector_dot(v1: &Vec<Vec<f64>>, v2: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     let mut result = Vec::new();
     if v1[0].len() == v2.len() {
         for i in 0..v1.len(){
@@ -350,7 +350,7 @@ fn vector_dot_(v1: &Vec<Vec<f64>>, v2: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     result
 }
 
-fn vector_sum_(v1: &Vec<Vec<f64>>, v2: &Vec<f64>) -> Vec<Vec<f64>> {
+fn vector_sum(v1: &Vec<Vec<f64>>, v2: &Vec<f64>) -> Vec<Vec<f64>> {
     let mut result = Vec::new();
     if v1[0].len() == v2.len(){
         for i in 0..v1.len(){
@@ -367,7 +367,7 @@ fn vector_sum_(v1: &Vec<Vec<f64>>, v2: &Vec<f64>) -> Vec<Vec<f64>> {
     result
 }
 
-fn sigmoid_(x: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+fn sigmoid(x: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     let mut result = Vec::new();
     for i in 0..x.len(){
         let mut r = Vec::new();
@@ -379,7 +379,7 @@ fn sigmoid_(x: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     result
 }
 
-fn cross_entropy_error_(y:&Vec<Vec<f64>>, t:&Vec<Vec<f64>>) -> f64{
+fn cross_entropy_error(y:&Vec<Vec<f64>>, t:&Vec<Vec<f64>>) -> f64{
     let delta = 1e-7;
     let one = 1.0_f64;
     let e = one.exp();
@@ -490,7 +490,7 @@ fn main() {
     for i in 0..dataset_.image_patch.len(){
         let loss_ = Net.learn(&dataset_.image_patch[i], &dataset_.label_patch[i], 0.3);
         let result_path = "result/".to_owned() + &i.to_string() + "_loss_" + &loss_.to_string() + "/";
-        fs::create_dir(&result_path);
+        fs::create_dir_all(&result_path);
         Net.write_weight_data(&result_path);
         loss.push(loss_);
         println!("loss {:?}", loss);
