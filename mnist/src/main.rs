@@ -5,6 +5,10 @@ use std::fs;
 use image::GenericImageView;
 use image::DynamicImage;
 use image::Rgba;
+use std::io::{Write, Read, BufWriter, BufReader, copy};
+use std::error::Error;
+use std::str::FromStr;
+use std::io::BufRead;
 
 struct Dataset{
     image_patch: Vec<Vec<Vec<f64>>>,
@@ -31,6 +35,119 @@ impl TwoLayerNet {
             w2 : w2_,
             b2 : b2_,
         }
+    }
+
+    fn new_read_weight(path: &str, input_size: u16, hidden_size: u16, output_size:u16) -> TwoLayerNet {
+        let mut w1_ = TwoLayerNet::create_queue(input_size, hidden_size);
+        let mut b1_ = TwoLayerNet::create_vector(hidden_size);
+        let mut w2_ = TwoLayerNet::create_queue(hidden_size, output_size);
+        let mut b2_ = TwoLayerNet::create_vector(output_size);
+
+        let weight_data = TwoLayerNet::read_weight_data(&(path.to_owned() + "weight1.txt"));
+        if ( w1_.len() * w1_[0].len() ) == weight_data.len(){
+            for i in 0..w1_.len(){
+                for j in 0..w1_[i].len(){
+                    w1_[i][j] = weight_data[(i*w1_[i].len()+j)];
+                }
+            }
+
+        }
+        else{
+            println!("weight_size {}, weight_data_size{}", w1_.len() * w1_[0].len(), weight_data.len());
+            println!("error: not match size new_read_weight1");
+        }
+
+        let weight_data = TwoLayerNet::read_weight_data(&(path.to_owned() + "weight2.txt"));
+        if ( w2_.len() * w2_[0].len() ) == weight_data.len(){
+            for i in 0..w2_.len(){
+                for j in 0..w2_[i].len(){
+                    w2_[i][j] = weight_data[(i*w2_[i].len()+j)];
+                }
+            }
+
+        }
+        else{
+            println!("weight_size {}, weight_data_size{}", w2_.len() * w2_[0].len(), weight_data.len());
+            println!("error: not match size new_read_weight2");
+        }
+
+        let biase_data = TwoLayerNet::read_weight_data(&(path.to_owned() + "biase1.txt"));
+        if b1_.len() == biase_data.len(){
+            for i in 0..b1_.len(){
+                b1_[i] = biase_data[i];
+            }
+        }
+        else{
+            println!("biase_size {}, biase_data_size{}", b1_.len(), biase_data.len());
+            println!("error: not match size new_read_biase1");
+        }
+
+        let biase_data = TwoLayerNet::read_weight_data(&(path.to_owned() + "biase2.txt"));
+        if b2_.len() == biase_data.len(){
+            for i in 0..b2_.len(){
+                b2_[i] = biase_data[i];
+            }
+        }
+        else{
+            println!("biase_size {}, biase_data_size{}", b2_.len(), biase_data.len());
+            println!("error: not match size new_read_biase2");
+        }
+        
+
+        TwoLayerNet{
+            w1 : w1_,
+            b1 : b1_,
+            w2 : w2_,
+            b2 : b2_,
+        }
+    }
+
+    fn write_weight_data(&self, path: &str){
+        let mut f = fs::File::create(&(path.to_owned() + "weight1.txt")).unwrap(); 
+        for i in 0..self.w1.len(){
+            for j in 0..self.w1[i].len(){
+                let string = self.w1[i][j].to_string() + "\n";
+                f.write_all(string.as_bytes()).unwrap();
+            }
+        }
+        f = fs::File::create(&(path.to_owned() + "weight2.txt")).unwrap(); 
+        for i in 0..self.w2.len(){
+            for j in 0..self.w2[i].len(){
+                let string = self.w2[i][j].to_string() + "\n";
+                f.write_all(string.as_bytes()).unwrap();
+            }
+        }
+        f = fs::File::create(&(path.to_owned() + "biase1.txt")).unwrap(); 
+        for i in 0..self.b1.len(){
+            let string = self.b1[i].to_string() + "\n";
+            f.write_all(string.as_bytes()).unwrap();
+        }
+        f = fs::File::create(&(path.to_owned() + "biase2.txt")).unwrap(); 
+        for i in 0..self.b2.len(){
+            let string = self.b2[i].to_string() + "\n";
+            f.write_all(string.as_bytes()).unwrap();
+        }
+
+    }
+
+    fn read_weight_data(path: &str) -> Vec<f64>{
+        let f = match fs::File::open(&path) {
+            Err(why) => panic!("couldn't open weight_file"),
+            Ok(file) => file,
+        };
+
+        let reader = BufReader::new(f);
+        let mut data = Vec::new();
+
+
+        for line in reader.lines() 
+        {
+            let f_s = f64::from_str(&line.unwrap()).unwrap();    //リテラル（&str）をfloatに変換
+            data.push(f_s);
+
+        }
+        data
+
     }
 
     fn create_queue(height: u16, wight: u16) -> Vec<Vec<f64>> {
@@ -72,7 +189,7 @@ impl TwoLayerNet {
     }
 
 
-    fn learn(&mut self, x: &Vec<Vec<f64>>, t: &Vec<Vec<f64>>) -> f64{
+    fn learn(&mut self, x: &Vec<Vec<f64>>, t: &Vec<Vec<f64>>, learning_rate:f64) -> f64{
         let h = 0.0001;
         let mut w1_grads = Vec::new();
         println!("Gradient calculation");
@@ -156,7 +273,6 @@ impl TwoLayerNet {
         println!("b2 finished");
         //println!("{:?}", b2_grads);
 
-        let learning_rate = 0.1 as f64;
         println!("start : Update of paramater");
         for i in 0..self.w1.len(){
             for j in 0..self.w1[i].len(){
@@ -285,7 +401,6 @@ fn cross_entropy_error_(y:&Vec<Vec<f64>>, t:&Vec<Vec<f64>>) -> f64{
     result
 }
 
-
 fn load_image(path: &str) -> Vec<f64>{
     let img: DynamicImage = image::open(path).unwrap();
     let (width, height) = img.dimensions();
@@ -367,14 +482,16 @@ fn read_file(path: &str, patch_size: u16) -> Dataset {
 
 fn main() {
     let dataset_ = read_file("C:/Users/rakun/Documents/mnist_png/mnist_png/testing/", 10);
-    
-    
+
+    //let mut Net = TwoLayerNet::new_read_weight("C:/Users/rakun/Documents/rust_mnist/mnist/result/0_loss_0/",784,30,10);
     let mut Net = TwoLayerNet::new(784,30,10);
-    //Net.learn(&neu, &label);
-    //println!("{:?}",Net.get_grad(&neu, &label));
+    
     let mut loss = Vec::new();
     for i in 0..dataset_.image_patch.len(){
-        let loss_ = Net.learn(&dataset_.image_patch[i], &dataset_.label_patch[i]);
+        let loss_ = Net.learn(&dataset_.image_patch[i], &dataset_.label_patch[i], 0.3);
+        let result_path = "result/".to_owned() + &i.to_string() + "_loss_" + &loss_.to_string() + "/";
+        fs::create_dir(&result_path);
+        Net.write_weight_data(&result_path);
         loss.push(loss_);
         println!("loss {:?}", loss);
     }
